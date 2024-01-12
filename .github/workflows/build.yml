@@ -50,9 +50,9 @@ jobs:
     - name: Import Custom configs
       if: (!cancelled())
       run: |
+        mv $config_file $work_dir/.config
+        mv $custom_script $work_dir/
         cd $work_dir
-        mv -f $config_file .config
-        mv -f $custom_script .
         chmod +x build_firmware_modify && chmod +x $custom_script
         ./$custom_script
 
