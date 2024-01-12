@@ -1,10 +1,11 @@
-name: Build
+name: Build-padavan-firmware
 
 on:
   workflow_dispatch:
-    inputs: 
+  
   # schedule:
   #  - cron: 0 12 15 * *
+  
   watch:
     types: [started]
 
@@ -12,7 +13,6 @@ env:
   src_git: https://github.com/MeIsReallyBa/padavan-4.4.git
   src_dir: /opt/padavan
   work_dir: /opt/padavan/trunk
-  images_dir: /opt/padavan/trunk/images
   config_file: config
   custom_script: custom.sh
 
@@ -68,7 +68,14 @@ jobs:
       uses: actions/upload-artifact@v4
       if: ${{ success() }} && !cancelled()
       with:
-        name: ${{ matrix.device }}_padavan_4.4
-        path: $images_dir
+        name: ${{ matrix.device }}
+        path: $work_dir/images
 
-  
+    - name: Upload firmware to release
+      uses: softprops/action-gh-release@v1
+      if: ${{ success() }}
+      env:
+       GITHUB_TOKEN: ${{ github.token }}
+      with:
+       files: |
+        $work_dir/images/*.trx  
