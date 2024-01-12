@@ -24,13 +24,13 @@ jobs:
     - name: Install dependencies
       if: (!cancelled())
       run: |
-        apt -qq install -y \
+        sudo apt-get -qq install -y \
           unzip libtool-bin curl cmake gperf gawk flex bison nano xxd \
           fakeroot kmod cpio git python3-docutils gettext automake autopoint \
           texinfo build-essential help2man pkg-config zlib1g-dev libgmp3-dev \
           libmpc-dev libmpfr-dev libncurses5-dev libltdl-dev wget libc-dev-bin &
           wait
-          timedatectl set-timezone "Asia/Shanghai"
+          sudo timedatectl set-timezone "Asia/Shanghai"
 
     - name: Clone source
       if: (!cancelled())
@@ -53,7 +53,7 @@ jobs:
       run: |
         pwd && ls -lhat
         cd /opt/padavan-4.4/trunk
-        ./$BUILD_SCRIPT ${{ matrix.device }}
+        fakeroot ./$BUILD_SCRIPT ${{ matrix.device }}
         echo "status=success" >> $GITHUB_OUTPUT
         echo "BUILD_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
         echo "VERSION=$(date +"%Y.%m.%d-%H:%M")"
