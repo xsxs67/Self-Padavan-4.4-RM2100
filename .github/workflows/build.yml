@@ -48,7 +48,8 @@ jobs:
       run: |
         mv -f $CONFIG_FILE /opt/padavan-4.4/trunk/configs/templates/${{ matrix.device }}.config \
         && mv -f $BUILD_SCRIPT /opt/padavan-4.4/trunk/ 
-        cd /opt/padavan-4.4/trunk && fakeroot ./$BUILD_SCRIPT ${{ matrix.device }}
+        cd /opt/padavan-4.4/trunk && chmod +x $BUILD_SCRIPT
+        fakeroot ./$BUILD_SCRIPT ${{ matrix.device }}
         echo "status=success" >> $GITHUB_OUTPUT
         echo "BUILD_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
         echo "VERSION=$(date +"%Y.%m.%d-%H:%M")"
