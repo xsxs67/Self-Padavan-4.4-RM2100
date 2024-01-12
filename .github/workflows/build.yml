@@ -10,7 +10,7 @@ env:
   config_dir: /opt/padavan/trunk/configs/templates
   images_dir: /opt/padavan/trunk/images
   config_file: config
-  custom_script: settings.sh
+  custom_script: custom.sh
 
 jobs:
   build:
