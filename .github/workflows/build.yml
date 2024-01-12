@@ -50,6 +50,7 @@ jobs:
     - name: Import Custom configs
       if: (!cancelled())
       run: |
+        cp $config_file $work_dir/configs/templates/${{ matrix.device }}.config
         mv $config_file $work_dir/.config
         mv $custom_script $work_dir/
         cd $work_dir
