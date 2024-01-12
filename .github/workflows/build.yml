@@ -6,7 +6,7 @@ on:
 env:
   REPO_URL: https://github.com/MeIsReallyBa/padavan-4.4
   REPO_BRANCH: main
-  CONFIG_FILE_NAME: config
+  CONFIG_FILE: config
   BUILD_SCRIPT: self_build_firmware
   GEN_RELEASE: true
 
@@ -36,11 +36,6 @@ jobs:
       if: (!cancelled())
       run: |
         git clone --depth=1 $REPO_URL -b $REPO_BRANCH /opt/padavan-4.4
-        
-    - name: Load custom configuration
-      run: |
-        mv -f $CONFIG_FILE /opt/padavan-4.4/trunk/configs/templates/${{ matrix.device }}.config \
-        && mv -f $BUILD_SCRIPT /opt/padavan-4.4/trunk/
 
     - name: Download toolchain
       if: (!cancelled())
@@ -51,9 +46,9 @@ jobs:
       if: (!cancelled())
       id: compile
       run: |
-        pwd && ls -lhat
-        cd /opt/padavan-4.4/trunk
-        fakeroot ./$BUILD_SCRIPT ${{ matrix.device }}
+        mv -f $CONFIG_FILE /opt/padavan-4.4/trunk/configs/templates/${{ matrix.device }}.config \
+        && mv -f $BUILD_SCRIPT /opt/padavan-4.4/trunk/ 
+        cd /opt/padavan-4.4/trunk && fakeroot ./$BUILD_SCRIPT ${{ matrix.device }}
         echo "status=success" >> $GITHUB_OUTPUT
         echo "BUILD_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
         echo "VERSION=$(date +"%Y.%m.%d-%H:%M")"
