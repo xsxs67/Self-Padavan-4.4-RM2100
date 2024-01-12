@@ -2,22 +2,28 @@ name: Build
 
 on:
   workflow_dispatch:
+    inputs: 
+  # schedule:
+  #  - cron: 0 12 15 * *
+  watch:
+    types: [started]
 
 env:
   src_git: https://github.com/MeIsReallyBa/padavan-4.4.git
   src_dir: /opt/padavan
   work_dir: /opt/padavan/trunk
-  config_dir: /opt/padavan/trunk/configs/templates
   images_dir: /opt/padavan/trunk/images
   config_file: config
   custom_script: custom.sh
 
 jobs:
   build:
+    name: build
+    runs-on: ubuntu-latest
+    if: github.event.repository.owner.id == github.event.sender.id
     strategy:
       matrix:
         device: [RM2100]
-    runs-on: ubuntu-latest
 
     steps:
     - name: Checkout
@@ -44,9 +50,10 @@ jobs:
     - name: Import Custom configs
       if: (!cancelled())
       run: |
-        mv -f $config_file $config_dir/${{ matrix.device }}.config
-        mv -f $custom_script $work_dir
-        cd $work_dir && chmod +x build_firmware_modify && chmod +x $custom_script
+        cd $work_dir
+        mv -f $config_file .config
+        mv -f $custom_script .
+        chmod +x build_firmware_modify && chmod +x $custom_script
         ./$custom_script
 
     - name: Compile the firmware
