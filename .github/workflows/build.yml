@@ -4,11 +4,13 @@ on:
   workflow_dispatch:
 
 env:
-  REPO_URL: https://github.com/MeIsReallyBa/padavan-4.4
-  REPO_BRANCH: main
-  CONFIG_FILE: config
-  BUILD_SCRIPT: self_build_firmware
-  GEN_RELEASE: true
+  src_git: https://github.com/MeIsReallyBa/padavan-4.4.git
+  src_dir: /opt/padavan
+  work_dir: /opt/padavan/trunk
+  config_dir: /opt/padavan/trunk/configs/templates
+  images_dir: /opt/padavan/trunk/images
+  config_file: config
+  custom_script: settings.sh
 
 jobs:
   build:
@@ -32,66 +34,32 @@ jobs:
           wait
           sudo timedatectl set-timezone "Asia/Shanghai"
 
-    - name: Clone source
+    - name: Clone source and Download toolchain
       if: (!cancelled())
       run: |
-        git clone --depth=1 $REPO_URL -b $REPO_BRANCH /opt/padavan-4.4
-
-    - name: Download toolchain
+        git clone --depth=1 $src_git $src_dir
+        cd /opt/padavan-4.4/toolchain-mipsel && chmod +x dl_toolchain.sh
+        ./dl_toolchain.sh
+    
+    - name: Import Custom configs
       if: (!cancelled())
       run: |
-        cd /opt/padavan-4.4/toolchain-mipsel && chmod +x dl_toolchain.sh && ./dl_toolchain.sh
+        mv -f $config_file $config_dir/${{ matrix.device }}.config
+        mv -f $custom_script $work_dir
+        cd $work_dir && chmod +x build_firmware_modify && chmod +x $custom_script
+        ./$custom_script
 
     - name: Compile the firmware
       if: (!cancelled())
       id: compile
       run: |
-        mv -f $CONFIG_FILE /opt/padavan-4.4/trunk/configs/templates/${{ matrix.device }}.config \
-        && mv -f $BUILD_SCRIPT /opt/padavan-4.4/trunk/ 
-        cd /opt/padavan-4.4/trunk && chmod +x $BUILD_SCRIPT
-        fakeroot ./$BUILD_SCRIPT ${{ matrix.device }}
-        echo "status=success" >> $GITHUB_OUTPUT
+        cd $work_dir
+        fakeroot ./build_firmware_modify ${{ matrix.device }} 0
         echo "BUILD_DATE=$(date +"%Y%m%d%H%M")" >> $GITHUB_ENV
-        echo "VERSION=$(date +"%Y.%m.%d-%H:%M")"
 
     - name: Upload firmware directory
       uses: actions/upload-artifact@v4
-      if: steps.compile.outputs.status == 'success' && !cancelled()
+      if: ${{ success() }} && !cancelled()
       with:
-        name: Padavan_firmware_${{ matrix.device }}_${{ env.BUILD_DATE }}
-        path: /opt/padavan-4.4/trunk/images
-
-    - name: Generate release tag
-      id: tag
-      if: steps.compile.outputs.status == 'success' && env.GEN_RELEASE == 'true' && !cancelled()
-      run: |
-        checksum=$(sha256sum /opt/padavan-4.4/trunk/images/${{ matrix.device }}.trx | cut -d" " -f1)
-        cat <<EOF > release.txt
-        ## MeIsReallyBa Padavan-4.4 Release ${{ env.VERSION }}  
-        - Source code: ${{ env.REPO_URL }}/tree/${{ env.REPO_BRANCH }}  
-        - ${{ matrix.device }}.trx
-          size: $(ls -lh /opt/padavan-4.4/trunk/images/${{ matrix.device }}.trx | awk '{print $5}')  
-          sha256: ${checksum}
-        EOF
-        echo "status=success" >> $GITHUB_OUTPUT
-
-    - name: Upload firmware to release
-      uses: softprops/action-gh-release@v1
-      if: steps.tag.outputs.status == 'success' && !cancelled()
-      env:
-       GITHUB_TOKEN: ${{ github.token }}
-      with:
-       tag_name: ${{ env.BUILD_DATE }}
-       body_path: release.txt
-       files: |
-        /opt/padavan-4.4/trunk/images/*.trx
-        /opt/padavan-4.4/trunk/configs/templates/${{ matrix.device }}.config
-
-    - name: Delete releases and workflows runs
-      uses: ophub/delete-releases-workflows@main
-      with:
-        del_releases: true
-        releases_keep_latest: 3
-        del_workflows: true
-        workflows_keep_day: 3
-        gh_token: ${{ github.token }}
+        name: ${{ matrix.device }}_padavan_4.4_${{ env.BUILD_DATE }}
+        path: $images_dir
