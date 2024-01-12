@@ -13,6 +13,7 @@ env:
   src_git: https://github.com/MeIsReallyBa/padavan-4.4.git
   src_dir: /opt/padavan
   work_dir: /opt/padavan/trunk
+  firmware_dir: /opt/firmware
   config_file: config
   custom_script: custom.sh
 
@@ -63,20 +64,24 @@ jobs:
       run: |
         cd $work_dir
         fakeroot ./build_firmware_modify ${{ matrix.device }} 0
+        echo "release_tag=$(date +"%Y.%m.%d-%H%M")" >> $GITHUB_OUTPUT
+        mkdir -p $firmware_dir
+        mv images/*.trx $firmware_dir
 
     - name: Upload firmware directory
       uses: actions/upload-artifact@v4
       if: ${{ success() }} && !cancelled()
       with:
         name: ${{ matrix.device }}
-        path: ${{ env.work_dir }}/images/
+        path: ${{ env.firmware_dir }}
         if-no-files-found: error
+        
 
     - name: Upload firmware to release
       uses: softprops/action-gh-release@v1
-      if: startsWith(github.ref, 'refs/tags/')
       env:
        GITHUB_TOKEN: ${{ github.token }}
       with:
        files: |
-         ${{ env.work_dir }}/images/*.trx
+         ${{ env.firmware_dir }}/*.trx
+       tag_name: ${{ steps.compile.outputs.release_tag }}
