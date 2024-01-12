@@ -25,6 +25,8 @@ jobs:
     strategy:
       matrix:
         device: [RM2100]
+    permissions: 
+      contents: write
 
     steps:
     - name: Checkout
